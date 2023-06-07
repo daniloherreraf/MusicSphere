@@ -1,12 +1,11 @@
-import React, { useEffect } from 'react';
-import styled from 'styled-components';
-import { AiFillClockCircle } from 'react-icons/ai';
-import { useStateProvider } from '../utils/StateProvider';
-import axios from 'axios';
-import { reducerCases } from '../utils/Constants';
-
-const Body = ({ headerBackground }) => {
-  const [{ token, selectedPlaylistId, selectedPlaylist }, dispatch] =
+import axios from "axios";
+import React, { useEffect } from "react";
+import styled from "styled-components";
+import { useStateProvider } from "../utils/StateProvider";
+import { AiFillClockCircle } from "react-icons/ai";
+import { reducerCases } from "../utils/Constants";
+export default function Body({ headerBackground }) {
+  const [{ token, selectedPlaylist, selectedPlaylistId }, dispatch] =
     useStateProvider();
 
   useEffect(() => {
@@ -15,16 +14,16 @@ const Body = ({ headerBackground }) => {
         `https://api.spotify.com/v1/playlists/${selectedPlaylistId}`,
         {
           headers: {
-            Authorization: 'Bearer ' + token,
-            'Content-Type': 'application/json',
+            Authorization: "Bearer " + token,
+            "Content-Type": "application/json",
           },
         }
       );
       const selectedPlaylist = {
         id: response.data.id,
         name: response.data.name,
-        description: response.data.description.startsWith('<a')
-          ? ''
+        description: response.data.description.startsWith("<a")
+          ? ""
           : response.data.description,
         image: response.data.images[0].url,
         tracks: response.data.tracks.items.map(({ track }) => ({
@@ -42,10 +41,47 @@ const Body = ({ headerBackground }) => {
     };
     getInitialPlaylist();
   }, [token, dispatch, selectedPlaylistId]);
+  const playTrack = async (
+    id,
+    name,
+    artists,
+    image,
+    context_uri,
+    track_number
+  ) => {
+    const response = await axios.put(
+      `https://api.spotify.com/v1/me/player/play`,
+      {
+        context_uri,
+        offset: {
+          position: track_number - 1,
+        },
+        position_ms: 0,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
+        },
+      }
+    );
+    if (response.status === 204) {
+      const currentPlaying = {
+        id,
+        name,
+        artists,
+        image,
+      };
+      dispatch({ type: reducerCases.SET_PLAYING, currentPlaying });
+      dispatch({ type: reducerCases.SET_PLAYER_STATE, playerState: true });
+    } else {
+      dispatch({ type: reducerCases.SET_PLAYER_STATE, playerState: true });
+    }
+  };
   const msToMinutesAndSeconds = (ms) => {
-    const minutes = Math.floor(ms / 60000);
-    const seconds = ((ms % 60000) / 1000).toFixed(0);
-    return minutes + ':' + (seconds > 10 ? '0' : '') + seconds;
+    var minutes = Math.floor(ms / 60000);
+    var seconds = ((ms % 60000) / 1000).toFixed(0);
+    return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
   };
   return (
     <Container headerBackground={headerBackground}>
@@ -53,7 +89,7 @@ const Body = ({ headerBackground }) => {
         <>
           <div className="playlist">
             <div className="image">
-              <img src={selectedPlaylist.image} alt="selectedplaylist" />
+              <img src={selectedPlaylist.image} alt="selected playlist" />
             </div>
             <div className="details">
               <span className="type">PLAYLIST</span>
@@ -62,7 +98,7 @@ const Body = ({ headerBackground }) => {
             </div>
           </div>
           <div className="list">
-            <div className="header_row">
+            <div className="header-row">
               <div className="col">
                 <span>#</span>
               </div>
@@ -94,7 +130,20 @@ const Body = ({ headerBackground }) => {
                   index
                 ) => {
                   return (
-                    <div className="row" key={id}>
+                    <div
+                      className="row"
+                      key={id}
+                      onClick={() =>
+                        playTrack(
+                          id,
+                          name,
+                          artists,
+                          image,
+                          context_uri,
+                          track_number
+                        )
+                      }
+                    >
                       <div className="col">
                         <span>{index + 1}</span>
                       </div>
@@ -123,9 +172,7 @@ const Body = ({ headerBackground }) => {
       )}
     </Container>
   );
-};
-
-export default Body;
+}
 
 const Container = styled.div`
   .playlist {
@@ -151,17 +198,17 @@ const Container = styled.div`
     }
   }
   .list {
-    .header_row {
+    .header-row {
       display: grid;
       grid-template-columns: 0.3fr 3fr 2fr 0.1fr;
-      color: #dddcdc;
       margin: 1rem 0 0 0;
+      color: #dddcdc;
       position: sticky;
       top: 15vh;
       padding: 1rem 3rem;
       transition: 0.3s ease-in-out;
       background-color: ${({ headerBackground }) =>
-        headerBackground ? '#000000dc' : 'none'};
+        headerBackground ? "#000000dc" : "none"};
     }
     .tracks {
       margin: 0 2rem;
@@ -181,6 +228,7 @@ const Container = styled.div`
           color: #dddcdc;
           img {
             height: 40px;
+            width: 40px;
           }
         }
         .detail {
